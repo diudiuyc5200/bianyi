@@ -30,6 +30,7 @@
       "release": true
     },
     "enableKernelSU": true,
-    "enableLXC": false
+    "enableLXC": false,
+    "enableBBG": true
   }
 ]

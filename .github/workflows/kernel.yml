@@ -70,6 +70,9 @@ jobs:
       # Whether to enable LXC docker
       ENABLE_LXC: ${{ matrix.CONFIG.enableLXC }}
 
+      # Whether to enable BBG
+      ENABLE_BBG: ${{ matrix.CONFIG.enableBBG }}
+
       # Set output & ccache directory
       OUT_DIR: "${{ github.workspace }}/out"
       CCACHE_DIR: "${{ github.workspace }}/ccache"
@@ -300,6 +303,30 @@ jobs:
             git am -s < ${{ env.WORKSPACE }}/LXC/Patches/xt_qtaguid.patch
             echo "🎖️ Apply xt_qtaguid.patch"
           fi
+
+      - name: 😋 Setup BBG
+        working-directory: ${{ env.KERNEL_NAME }}
+        env:
+          ARCH: ${{ steps.generate-args.outputs.ARCH }}
+        if: ${{ env.ENABLE_BBG == 'true' }}
+        run: |
+          # Delete old BBG
+          if [ -d "./Baseband-guard" ]; then
+            rm -rf "./Baseband-guard"
+          fi
+          if [ -d "./security/baseband-guard" ]; then
+            rm -rf "./security/baseband-guard"
+          fi
+
+          # Apply new BBG patches
+          curl -LSs "https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh" | bash
+
+          # Add BBG configurations if not already present
+          if ! grep -q "CONFIG_BBG=" "arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}"; then
+            echo -e "CONFIG_BBG=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
+          fi
+          
+          cat arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
 
       - name: 👍 Start building the kernel
         working-directory: ${{ env.KERNEL_NAME }}
