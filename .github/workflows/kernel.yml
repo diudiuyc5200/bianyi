@@ -154,12 +154,19 @@ jobs:
             if echo $toolchain | jq -e 'has("release")' > /dev/null; then
               # If from GitHub release
               release_repo=$(echo $toolchain | jq -r ".release")
-              repo_owner=$(echo $release_repo | sed 's|.*/||' | sed 's|\.git||' | head -c1 | tr '[:lower:]' '[:upper:]'; echo $release_repo | sed 's|.*/||' | sed 's|\.git||' | tail -c+2)
-              repo_name=$(basename "$release_repo")
+              # Extract owner and repo name from URL like https://github.com/Mandi-Sa/clang
+              repo_owner=$(echo $release_repo | sed 's|https://github.com/||' | cut -d'/' -f1)
+              repo_name=$(echo $release_repo | sed 's|https://github.com/||' | cut -d'/' -f2 | sed 's|\.git||')
               
               # Get the latest release and find the most recently updated asset
               latest_release=$(curl -s https://api.github.com/repos/$repo_owner/$repo_name/releases/latest)
               download_url=$(echo $latest_release | jq -r '.assets | sort_by(.updated_at) | reverse | .[0].browser_download_url')
+              
+              if [ -z "$download_url" ] || [ "$download_url" == "null" ]; then
+                echo "❌ Failed to get download URL for $toolchain_name from $repo_owner/$repo_name"
+                echo "API response: $latest_release"
+                exit 1
+              fi
               
               mkdir -p $toolchain_name
               
