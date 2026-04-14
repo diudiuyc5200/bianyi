@@ -3,15 +3,14 @@
     "kernelSource": {
       "name": "crux-marisa",
       "repo": "https://github.com/wjy1065676928/crux-marisa",
-      "branch": "1",
+      "branch": "BBG",
       "device": "crux",
-      "defconfig": "crux_defconfig"
+      "defconfig": "crux_test_defconfig"
     },
     "toolchains": [
       {
-        "name": "proton-clang",
-        "repo": "https://github.com/kdrag0n/proton-clang",
-        "branch": "master",
+        "name": "clang",
+        "release": "https://github.com/Mandi-Sa/clang",
         "binaryEnv": ["./bin"]
       }
     ],
