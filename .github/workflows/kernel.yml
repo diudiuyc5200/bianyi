@@ -311,12 +311,9 @@ jobs:
           if [ -d "./Baseband-guard" ]; then
             rm -rf "./Baseband-guard"
           fi
-          if [ -d "./security/baseband-guard" ]; then
-            rm -rf "./security/baseband-guard"
-          fi
 
           # Apply new BBG patches
-          curl -LSs "https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh" | bash
+          git clone https://github.com/vc-teahouse/Baseband-guard.git Baseband-guard
 
           # Add BBG configurations if not already present
           if ! grep -q "CONFIG_BBG=" "arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}"; then
