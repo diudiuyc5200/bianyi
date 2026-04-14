@@ -5,6 +5,12 @@ on:
     paths:
       - ".github/workflows/kernel.yml"
   workflow_dispatch:
+    inputs:
+      test_toolchain:
+        description: 'Test toolchain only (skip kernel build)'
+        required: false
+        default: false
+        type: boolean
   schedule:
     - cron: "14 13 * * 5"
 
@@ -127,6 +133,7 @@ jobs:
             cache-${{ env.KERNEL_NAME }}-
 
       - name: 🌟 Clone kernel source => (${{ env.KERNEL_REPO }})
+        if: ${{ github.event.inputs.test_toolchain != 'true' }}
         run: |
           git clone --recursive --depth=1 -j $(nproc) --branch ${{ env.KERNEL_BRANCH }} ${{ env.KERNEL_REPO }} ${{ env.KERNEL_NAME }}
           # tree ${{ env.KERNEL_NAME }}
@@ -143,11 +150,50 @@ jobs:
 
             toolchain_name=$(echo $toolchain | jq -r ".name")
             
+            # Handle release-based toolchains
+            if echo $toolchain | jq -e 'has("release")' > /dev/null; then
+              # If from GitHub release
+              release_repo=$(echo $toolchain | jq -r ".release")
+              repo_owner=$(echo $release_repo | sed 's|.*/||' | sed 's|\.git||' | head -c1 | tr '[:lower:]' '[:upper:]'; echo $release_repo | sed 's|.*/||' | sed 's|\.git||' | tail -c+2)
+              repo_name=$(basename "$release_repo")
+              
+              # Get the latest release and find the most recently updated asset
+              latest_release=$(curl -s https://api.github.com/repos/$repo_owner/$repo_name/releases/latest)
+              download_url=$(echo $latest_release | jq -r '.assets | sort_by(.updated_at) | reverse | .[0].browser_download_url')
+              
+              mkdir -p $toolchain_name
+              
+              # Download archive
+              wget "$download_url" -O /tmp/toolchain_archive
+              
+              # Get filename
+              filename=$(basename "$download_url")
+              case "$filename" in
+                *.zip)
+                  unzip -d $toolchain_name /tmp/toolchain_archive
+                  ;;
+                *.tar)
+                  tar xvf /tmp/toolchain_archive -C $toolchain_name
+                  ;;
+                *.tar.gz)
+                  tar zxvf /tmp/toolchain_archive -C $toolchain_name
+                  ;;
+                *.rar)
+                  unrar x /tmp/toolchain_archive $toolchain_name
+                  ;;
+                *)
+                  echo "unknown file type: $filename"
+                  ;;
+              esac
+              # Clean up temp file
+              rm /tmp/toolchain_archive
+
+              echo "🤔 Download $toolchain_name from latest release => ($download_url)"
             # From archive
-            if echo $toolchain | jq -e 'has("url")' > /dev/null; then
+            elif echo $toolchain | jq -e 'has("url")' > /dev/null; then
               # If from archive
               toolchain_url=$(echo $toolchain | jq -r ".url")
-              mkdir -p '$toolchain_name'
+              mkdir -p $toolchain_name
 
               # Download archive
               wget "$toolchain_url"
@@ -245,11 +291,16 @@ jobs:
           fi
 
           # Apply new KernelSU patches
-          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.5
+          curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash
 
-          echo -e "CONFIG_KPROBES=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
-          echo -e "CONFIG_HAVE_KPROBES=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
-          echo -e "CONFIG_KPROBE_EVENTS=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
+          # Add KernelSU configurations if not already present
+          if ! grep -q "CONFIG_KSU=" "arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}"; then
+            echo -e "CONFIG_KSU=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
+          fi
+          
+          if ! grep -q "CONFIG_KSU_MANUAL_HOOK=" "arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}"; then
+            echo -e "CONFIG_KSU_MANUAL_HOOK=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
+          fi
 
           cat arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
 
