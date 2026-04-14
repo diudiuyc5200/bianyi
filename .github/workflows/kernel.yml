@@ -158,17 +158,36 @@ jobs:
               repo_owner=$(echo $release_repo | sed 's|https://github.com/||' | cut -d'/' -f1)
               repo_name=$(echo $release_repo | sed 's|https://github.com/||' | cut -d'/' -f2 | sed 's|\.git||')
               
+              echo "🤔 Fetching latest release for $repo_owner/$repo_name..."
+              
               # Get the latest release and find the most recently updated asset
               latest_release=$(curl -s https://api.github.com/repos/$repo_owner/$repo_name/releases/latest)
-              download_url=$(echo $latest_release | jq -r '.assets | sort_by(.updated_at) | reverse | .[0].browser_download_url')
+              
+              # Check if API call succeeded
+              if echo "$latest_release" | jq -e '.message' > /dev/null 2>&1; then
+                echo "❌ API Error: $(echo $latest_release | jq -r '.message')"
+                exit 1
+              fi
+              
+              # Check if assets exist
+              assets_count=$(echo "$latest_release" | jq '.assets | length')
+              if [ "$assets_count" -eq 0 ]; then
+                echo "❌ No assets found in latest release"
+                echo "Release info: $(echo $latest_release | jq '.tag_name, .name')"
+                exit 1
+              fi
+              
+              download_url=$(echo "$latest_release" | jq -r '.assets | sort_by(.updated_at) | reverse | .[0].browser_download_url')
               
               if [ -z "$download_url" ] || [ "$download_url" == "null" ]; then
-                echo "❌ Failed to get download URL for $toolchain_name from $repo_owner/$repo_name"
-                echo "API response: $latest_release"
+                echo "❌ Failed to extract download URL"
+                echo "Assets: $(echo $latest_release | jq '.assets')"
                 exit 1
               fi
               
               mkdir -p $toolchain_name
+              
+              echo "📥 Downloading from: $download_url"
               
               # Download archive
               wget "$download_url" -O /tmp/toolchain_archive
@@ -237,9 +256,15 @@ jobs:
               echo "🤔 Clone $toolchain_name => ($toolchain_repo)"
             fi
 
-            jq -r ".binaryEnv[] | tostring" <<< "$toolchain" | while read -r subPath; do
-              echo "${{ env.WORKSPACE }}/$toolchain_name/$subPath" >> $GITHUB_PATH
-            done
+            # Add binary paths to PATH
+            binaryEnv=$(echo "$toolchain" | jq -r ".binaryEnv[]" 2>/dev/null || echo "")
+            if [ -n "$binaryEnv" ]; then
+              while read -r subPath; do
+                if [ -n "$subPath" ]; then
+                  echo "${{ env.WORKSPACE }}/$toolchain_name/$subPath" >> $GITHUB_PATH
+                fi
+              done <<< "$binaryEnv"
+            fi
           done
 
       - name: 😎 Set build args
