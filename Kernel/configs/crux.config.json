@@ -3,7 +3,7 @@
     "kernelSource": {
       "name": "crux-marisa",
       "repo": "https://github.com/wjy1065676928/crux-marisa",
-      "branch": "BBG",
+      "branch": "Stable",
       "device": "crux",
       "defconfig": "crux_test_defconfig"
     },
