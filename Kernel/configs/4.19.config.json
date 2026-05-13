@@ -2,7 +2,7 @@
   {
     "kernelSource": {
       "name": "4.19",
-      "repo": "https://github.com/duckyduckG/android_kernel_qcom_sm8150_419",
+      "repo": "https://github.com/wjy1065676928/android_kernel_qcom_sm8150_419",
       "branch": "lineage-23.2",
       "device": "crux",
       "defconfig": "vendor/sm8150-perf_defconfig"
@@ -29,8 +29,8 @@
       "use": false,
       "release": true
     },
-    "enableKernelSU": false,
+    "enableKernelSU": true,
     "enableLXC": false,
-    "enableBBG": false
+    "enableBBG": true
   }
 ]
