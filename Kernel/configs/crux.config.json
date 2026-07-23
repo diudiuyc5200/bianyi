@@ -2,10 +2,10 @@
   {
     "kernelSource": {
       "name": "crux-marisa",
-      "repo": "https://github.com/diudiuyc5200/crux068.git",
-      "branch": "17",
+      "repo": "https://github.com/diudiuyc5200/0723-1.git",
+      "branch": "v3.1",
       "device": "crux",
-      "defconfig": "crux_test_defconfig"
+      "defconfig": "crux_defconfig"
     },
     "toolchains": [
       {
@@ -29,7 +29,7 @@
       "use": false,
       "release": true
     },
-    "enableKernelSU": false,
+    "enableKernelSU": true,
     "enableLXC": false,
     "enableBBG": false
   }
