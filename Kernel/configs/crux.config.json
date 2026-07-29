@@ -39,8 +39,8 @@
       "use": false,
       "release": true
     },
-    "enableKernelSU": true,
+    "enableKernelSU": false,
     "enableLXC": false,
-    "enableBBG": true
+    "enableBBG": false
   }
 ]
