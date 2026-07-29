@@ -2,8 +2,8 @@
   {
     "kernelSource": {
       "name": "crux-marisa",
-      "repo": "https://github.com/diudiuyc5200/0723.git",
-      "branch": "ceshi",
+      "repo": "https://github.com/diudiuyc5200/0728.git",
+      "branch": "test2",
       "device": "crux",
       "defconfig": "crux_defconfig"
     },
@@ -41,6 +41,6 @@
     },
     "enableKernelSU": true,
     "enableLXC": false,
-    "enableBBG": false
+    "enableBBG": true
   }
 ]
