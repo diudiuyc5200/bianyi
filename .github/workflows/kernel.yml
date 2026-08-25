@@ -188,11 +188,14 @@ jobs:
           sed -i '/CONFIG_LTO=/d' $DEFCONFIG
           sed -i '/CONFIG_LTO_CLANG/d' $DEFCONFIG
           sed -i '/CONFIG_THINLTO/d' $DEFCONFIG
+          sed -i '/CONFIG_COMPAT_VDSO=/d' $DEFCONFIG
           echo "# Disable LTO" >> $DEFCONFIG
           echo "# CONFIG_LTO is not set" >> $DEFCONFIG
           echo "# CONFIG_LTO_CLANG is not set" >> $DEFCONFIG
           echo "# CONFIG_LTO_CLANG_THIN is not set" >> $DEFCONFIG
           echo "# CONFIG_LTO_CLANG_FULL is not set" >> $DEFCONFIG
+          # 移除 COMPAT_VDSO，避免clang编译时动态开启CONFIG_VDSO32
+          echo "# CONFIG_COMPAT_VDSO is not set" >> $DEFCONFIG
 
       - name: Setup KernelSU
         working-directory: ${{ env.KERNEL_NAME }}
