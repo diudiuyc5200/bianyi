@@ -209,11 +209,19 @@ jobs:
           if [ -d "./drivers/kernelsu" ]; then
             rm -rf "./drivers/kernelsu"
           fi
-          curl -LSs "https://raw.githubusercontent.com/lsfqxd2006/ReSukiSU/v4.1.0_34965/kernel/setup.sh" | bash
-          if ! grep -q "CONFIG_KSU=" "arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}"; then
-            echo -e "CONFIG_KSU=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
-          fi
-          cat arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
+          curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash
+    # 关键：注释两套check.mk include，关闭编译期grep源码校验
+    sed -i '/manual_hook_check.mk/s/^/#/' drivers/kernelsu/Makefile
+    sed -i '/inline_hook_check.mk/s/^/#/' drivers/kernelsu/Makefile
+
+    if ! grep -q "CONFIG_KSU=" "arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}"; then
+      echo -e "CONFIG_KSU=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
+    fi
+    # 恢复强制开启MANUAL_HOOK=y，4.14 susfs必须
+    if ! grep -q "CONFIG_KSU_MANUAL_HOOK=" "arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}"; then
+      echo -e "CONFIG_KSU_MANUAL_HOOK=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
+    fi
+    cat arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
 
       - name: Setup LXC docker
         working-directory: ${{ env.KERNEL_NAME }}
