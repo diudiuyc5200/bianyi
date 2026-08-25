@@ -188,14 +188,11 @@ jobs:
           sed -i '/CONFIG_LTO=/d' $DEFCONFIG
           sed -i '/CONFIG_LTO_CLANG/d' $DEFCONFIG
           sed -i '/CONFIG_THINLTO/d' $DEFCONFIG
-          sed -i '/CONFIG_COMPAT_VDSO=/d' $DEFCONFIG
           echo "# Disable LTO" >> $DEFCONFIG
           echo "# CONFIG_LTO is not set" >> $DEFCONFIG
           echo "# CONFIG_LTO_CLANG is not set" >> $DEFCONFIG
           echo "# CONFIG_LTO_CLANG_THIN is not set" >> $DEFCONFIG
           echo "# CONFIG_LTO_CLANG_FULL is not set" >> $DEFCONFIG
-          # 移除 COMPAT_VDSO，避免clang编译时动态开启CONFIG_VDSO32
-          echo "# CONFIG_COMPAT_VDSO is not set" >> $DEFCONFIG
 
       - name: Setup KernelSU
         working-directory: ${{ env.KERNEL_NAME }}
@@ -210,18 +207,15 @@ jobs:
             rm -rf "./drivers/kernelsu"
           fi
           curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash
-    # 关键：注释两套check.mk include，关闭编译期grep源码校验
-    sed -i '/manual_hook_check.mk/s/^/#/' drivers/kernelsu/Makefile
-    sed -i '/inline_hook_check.mk/s/^/#/' drivers/kernelsu/Makefile
-
-    if ! grep -q "CONFIG_KSU=" "arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}"; then
-      echo -e "CONFIG_KSU=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
-    fi
-    # 恢复强制开启MANUAL_HOOK=y，4.14 susfs必须
-    if ! grep -q "CONFIG_KSU_MANUAL_HOOK=" "arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}"; then
-      echo -e "CONFIG_KSU_MANUAL_HOOK=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
-    fi
-    cat arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
+          sed -i '/manual_hook_check.mk/s/^/#/' drivers/kernelsu/Makefile
+          sed -i '/inline_hook_check.mk/s/^/#/' drivers/kernelsu/Makefile
+          if ! grep -q "CONFIG_KSU=" "arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}"; then
+            echo -e "CONFIG_KSU=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
+          fi
+          if ! grep -q "CONFIG_KSU_MANUAL_HOOK=" "arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}"; then
+            echo -e "CONFIG_KSU_MANUAL_HOOK=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
+          fi
+          cat arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
 
       - name: Setup LXC docker
         working-directory: ${{ env.KERNEL_NAME }}
