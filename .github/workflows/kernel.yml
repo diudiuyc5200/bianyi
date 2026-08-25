@@ -213,9 +213,6 @@ jobs:
           if ! grep -q "CONFIG_KSU=" "arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}"; then
             echo -e "CONFIG_KSU=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
           fi
-          if ! grep -q "CONFIG_KSU_MANUAL_HOOK=" "arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}"; then
-            echo -e "CONFIG_KSU_MANUAL_HOOK=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
-          fi
           cat arch/${{ env.ARCH }}/configs/${{ env.KERNEL_DEFCONFIG_PATH }}
 
       - name: Setup LXC docker
