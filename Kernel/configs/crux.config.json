@@ -9,16 +9,19 @@
     },
     "toolchains": [
       {
-        "name": "zyc-clang",
-        "url": "https://github.com/ZyCromerZ/Clang/releases/download/14.0.6-20260619-release/Clang-14.0.6-20260619.tar.gz",
-        "binaryEnv": ["./bin"]
+        "name": "proton-clang",
+        "repo": "https://gitlab.com/LeCmnGend/proton-clang.git",
+        "branch": "clang-16",
+        "binaryEnv": ["bin"]
       }
     ],
     "enableCcache": true,
     "params": {
       "ARCH": "arm64",
-      "CC": "zyc-clang/bin/clang",
+      "CC": "proton-clang/bin/clang",
       "externalCommands": {
+        "CROSS_COMPILE": "proton-clang/bin/aarch64-linux-gnu-",
+        "CROSS_COMPILE_ARM32": "proton-clang/bin/arm-linux-gnueabi-",
         "CLANG_TRIPLE": "aarch64-linux-gnu-"
       }
     },
