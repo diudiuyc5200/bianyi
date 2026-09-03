@@ -6,6 +6,8 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "14 13 * * 5"
+    env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 jobs:
   Read-configuration:
     name: Build Kernel by ${{ github.actor }}
@@ -56,16 +58,11 @@ jobs:
       # 替换 pierotofy/set-swap-space@master，原生shell创建10G swap，无JS Action依赖
       - name: Set swap to 10G
         run: |
-          sudo swapoff /swapfile || true
-    sudo rm -f /swapfile
-    if ! sudo fallocate -l 10G /swapfile; then
-      echo "fallocate failed, fallback to dd"
-      sudo dd if=/dev/zero of=/swapfile bs=1M count=10240 status=none
-    fi
-    sudo chmod 600 /swapfile
-    sudo mkswap /swapfile
-    sudo swapon /swapfile
-    swapon --show
+          sudo fallocate -l 10G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          echo "/swapfile none swap sw 0 0" | sudo tee -a /etc/fstab
 
       - name: Checkout
         uses: actions/checkout@v6
