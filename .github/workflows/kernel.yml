@@ -37,6 +37,7 @@ jobs:
       matrix:
         CONFIG: ${{ fromJSON(needs.Read-configuration.outputs.CONFIGS) }}
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       WORKSPACE: ${{ github.workspace }}
       BUILD_DATE: "${{ needs.Read-configuration.outputs.BUILD_DATE }}"
       KERNEL_NAME: ${{ matrix.CONFIG.kernelSource.name }}
@@ -53,19 +54,18 @@ jobs:
       OUT_DIR: "${{ github.workspace }}/out"
       CCACHE_DIR: "${{ github.workspace }}/ccache"
     steps:
-      # 替换 pierotofy/set-swap-space@master，原生shell创建10G swap，无JS Action依赖
       - name: Set swap to 10G
-  run: |
-    sudo swapoff /swapfile || true
-    sudo rm -f /swapfile
-    if ! sudo fallocate -l 10G /swapfile; then
-      echo "fallocate failed, fallback to dd"
-      sudo dd if=/dev/zero of=/swapfile bs=1M count=10240 status=none
-    fi
-    sudo chmod 600 /swapfile
-    sudo mkswap /swapfile
-    sudo swapon /swapfile
-    swapon --show
+        run: |
+          sudo swapoff /swapfile || true
+          sudo rm -f /swapfile
+          if ! sudo fallocate -l 10G /swapfile; then
+            echo "fallocate failed, fallback to dd"
+            sudo dd if=/dev/zero of=/swapfile bs=1M count=10240 status=none
+          fi
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          swapon --show
 
       - name: Checkout
         uses: actions/checkout@v6
