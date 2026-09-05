@@ -86,23 +86,26 @@ jobs:
         id: hash
         run: |
           mkdir -p ${{ env.OUT_DIR }}
-          ccache -o compression=false -o cache_dir=${{ env.CCACHE_DIR }}
-          echo "HASH=$(echo -n '${{ toJSON(matrix.config) }}' | openssl dgst -sha1 | awk '{print $2}')" >> $GITHUB_OUTPUT
+          mkdir -p ${{ env.CCACHE_DIR }}
+          export CCACHE_DIR=${{ env.CCACHE_DIR }}
+          ccache -o compression=false
+          ccache -o cache_dir=${{ env.CCACHE_DIR }}
+          ccache -o max_size=5G
+          ccache -z
+          ccache -s
+          echo "HASH=$(echo -n '${{ toJSON(matrix.CONFIG) }}' | openssl dgst -sha1 | awk '{print $2}')" >> $GITHUB_OUTPUT
 
-      - name: Cache ccache & output
+      - name: Cache ccache
         env:
           HASH: ${{ steps.hash.outputs.HASH }}
         if: ${{ env.ENABLE_CCACHE == 'true' }}
         uses: actions/cache@v5
         with:
-          path: |
-            ${{ env.OUT_DIR }}
-            ${{ env.CCACHE_DIR }}
-          key: cache-${{ env.KERNEL_NAME }}-${{env.HASH}}-${{ env.BUILD_DATE }}
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ env.KERNEL_NAME }}-${{env.HASH}}-${{ env.BUILD_DATE }}
           restore-keys: |
-            cache-${{ env.KERNEL_NAME }}-${{env.HASH}}-${{ env.BUILD_DATE }}
-            cache-${{ env.KERNEL_NAME }}-${{env.HASH}}-
-            cache-${{ env.KERNEL_NAME }}-
+            ccache-${{ env.KERNEL_NAME }}-${{env.HASH}}-
+            ccache-${{ env.KERNEL_NAME }}-
 
       - name: Clone kernel source
         run: |
@@ -165,9 +168,12 @@ jobs:
           THREAD: $(nproc --all)
         run: |
           echo "PATH Variable: $PATH"
+          export CCACHE_DIR=${{ env.CCACHE_DIR }}
           ARCH=$(echo $PARAMS | jq -r ".ARCH")
           CC=$(echo $PARAMS | jq -r ".CC")
+          CXX=$(echo $PARAMS | jq -r ".CXX // ''")
           args="-j${{ env.THREAD }} O=${{ env.OUT_DIR }} ARCH=$ARCH"
+
           if [ -n "$CC" ]; then
             if [[ "$CC" == *"/"* ]]; then
               CC=${{ env.WORKSPACE }}/$CC
@@ -178,6 +184,18 @@ jobs:
               args="$args CC=$CC"
             fi
           fi
+
+          if [ -n "$CXX" ]; then
+            if [[ "$CXX" == *"/"* ]]; then
+              CXX=${{ env.WORKSPACE }}/$CXX
+            fi
+            if [ ${{ env.ENABLE_CCACHE }} = true ]; then
+              args="$args CXX=\"ccache $CXX\""
+            else
+              args="$args CXX=$CXX"
+            fi
+          fi
+
           while read -r externalCommand; do
             key=$(echo "$externalCommand" | cut -d= -f1)
             value=$(echo "$externalCommand" | cut -d= -f2)
@@ -186,6 +204,7 @@ jobs:
             fi
             args="$args $key=$value"
           done < <(jq -r '.externalCommands | to_entries[] | "\(.key)=\(.value)"' <<< "$PARAMS")
+
           echo "ARCH=$ARCH" >> $GITHUB_OUTPUT
           echo "ARGS=$args" >> $GITHUB_OUTPUT
           echo "$args"
@@ -283,12 +302,14 @@ jobs:
         working-directory: ${{ env.KERNEL_NAME }}
         env:
           ARGS: ${{ steps.generate-args.outputs.ARGS }}
+          CCACHE_DIR: ${{ env.CCACHE_DIR }}
         run: |
           echo "PATH Variable: $PATH"
           export KBUILD_BUILD_HOST=Github-Action
           export KBUILD_BUILD_USER=$(echo ${{ github.actor }} | tr A-Z a-z)
           make ${{ env.ARGS }} ${{ env.KERNEL_DEFCONFIG_PATH }}
           make ${{ env.ARGS }}
+          ccache -s
 
       - name: Upload Image
         uses: actions/upload-artifact@v6
